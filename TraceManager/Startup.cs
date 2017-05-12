@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using TraceManager.Data;
 using TraceManager.Models;
 using TraceManager.Services;
+using Microsoft.AspNetCore.Mvc;
 
 namespace TraceManager
 {
@@ -41,13 +42,17 @@ namespace TraceManager
         {
             // Add framework services.
             services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+                options.UseMySql(Configuration.GetConnectionString("DefaultConnection")));
 
             services.AddIdentity<ApplicationUser, IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
 
-            services.AddMvc();
+            services.AddMvc(options=>
+            {
+                options.SslPort = 44360;
+                options.Filters.Add(new RequireHttpsAttribute());
+            });
 
             // Add application services.
             services.AddTransient<IEmailSender, AuthMessageSender>();
@@ -71,9 +76,15 @@ namespace TraceManager
                 app.UseExceptionHandler("/Home/Error");
             }
 
+
             app.UseStaticFiles();
 
             app.UseIdentity();
+            app.UseGoogleAuthentication(new GoogleOptions()
+            {
+                ClientId = Configuration["Authentication:Google:ClientId"],
+                ClientSecret = Configuration["Authentication:Google:ClientSecret"]
+            });
 
             // Add external authentication middleware below. To configure them please see https://go.microsoft.com/fwlink/?LinkID=532715
 
